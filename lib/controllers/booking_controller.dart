@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
+import '../baseUrl.dart';
 
 class BookingController extends GetxController {
   final RxBool isLoading = false.obs;
@@ -11,7 +12,7 @@ class BookingController extends GetxController {
   // iOS simulator: http://127.0.0.1:8000
   // Android emulator: http://10.0.2.2:8000
   // Physical device: http://YOUR_IP:8000
-  String baseUrl = 'http://127.0.0.1:8000';
+  String baseUrl = BaseUrl.baseUrl;
 
   Future<bool> createBooking({
     required String customerName,

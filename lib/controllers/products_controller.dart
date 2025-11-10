@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../models/product.dart';
+import '../baseUrl.dart';
 
 class ProductsController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
   final RxList<Product> products = <Product>[].obs;
 
-  String baseUrl = 'http://127.0.0.1:8000';
+  String baseUrl = BaseUrl.baseUrl;
 
   @override
   void onInit() {
