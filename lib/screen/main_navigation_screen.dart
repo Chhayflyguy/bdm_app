@@ -5,7 +5,7 @@ import '../widget/responsive.dart';
 import 'home.dart';
 import 'services/services_screen.dart';
 import 'product/product_screen.dart';
-import 'booking/booking_screen.dart';
+import 'booking/my_booking.dart';
 import 'settings_screen.dart';
 
 class MainNavigationController extends GetxController {
@@ -27,7 +27,7 @@ class MainNavigationScreen extends StatelessWidget {
       const HomePage(),
       const ServicesScreen(),
       const ProductScreen(),
-      const BookingScreen(),
+      const MyBookingPage(),
       const SettingsScreen(),
     ];
 

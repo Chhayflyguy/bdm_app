@@ -6,6 +6,7 @@ import 'package:omni_datetime_picker/omni_datetime_picker.dart';
 import '../../controllers/booking_controller.dart';
 import '../../controllers/services_controller.dart';
 import '../../models/service.dart';
+import 'my_booking.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -70,6 +71,15 @@ class _BookingScreenState extends State<BookingScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.secondary,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () {
+              Get.to(() => const MyBookingPage());
+            },
+            tooltip: 'My Bookings',
+          ),
+        ],
       ),
       body: Obx(() {
         if (servicesController.isLoading.value) {
