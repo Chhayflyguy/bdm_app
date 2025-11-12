@@ -5,7 +5,11 @@ import 'package:get/get.dart';
 import 'package:omni_datetime_picker/omni_datetime_picker.dart';
 import '../../controllers/booking_controller.dart';
 import '../../controllers/services_controller.dart';
+import '../../controllers/cart_controller.dart';
+import '../../controllers/products_controller.dart';
 import '../../models/service.dart';
+import '../../models/cart_item.dart';
+import '../product/product_screen.dart';
 import 'my_booking.dart';
 
 class BookingScreen extends StatefulWidget {
@@ -25,7 +29,9 @@ class _BookingScreenState extends State<BookingScreen> {
   Service? selectedService;
   
   final BookingController bookingController = Get.put(BookingController());
+  final CartController cartController = Get.put(CartController());
   late final ServicesController servicesController;
+  ProductsController? productsController;
   
   @override
   void initState() {
@@ -39,6 +45,14 @@ class _BookingScreenState extends State<BookingScreen> {
       }
     } catch (e) {
       servicesController = Get.put(ServicesController());
+    }
+    
+    // Try to find existing products controller to refresh products after booking
+    try {
+      productsController = Get.find<ProductsController>();
+    } catch (e) {
+      // Products controller doesn't exist yet, that's okay
+      productsController = null;
     }
   }
 
@@ -71,15 +85,15 @@ class _BookingScreenState extends State<BookingScreen> {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.secondary,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month),
-            onPressed: () {
-              Get.to(() => const MyBookingPage());
-            },
-            tooltip: 'My Bookings',
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     icon: const Icon(Icons.calendar_month),
+        //     onPressed: () {
+        //       Get.to(() => const MyBookingPage());
+        //     },
+        //     tooltip: 'My Bookings',
+        //   ),
+        // ],
       ),
       body: Obx(() {
         if (servicesController.isLoading.value) {
@@ -566,6 +580,153 @@ class _BookingScreenState extends State<BookingScreen> {
                     
                     SizedBox(height: isTablet ? 24 : 20),
                     
+                    // Products Card (Optional)
+                    Obx(() => _buildSectionCard(
+                      context,
+                      isTablet: isTablet,
+                      title: 'Products (Optional)',
+                      icon: Icons.shopping_bag_outlined,
+                      isOptional: true,
+                      child: cartController.cartItems.isEmpty
+                          ? Column(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(isTablet ? 20 : 16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: AppColors.border),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.shopping_cart_outlined,
+                                        size: isTablet ? 48 : 40,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      SizedBox(height: isTablet ? 12 : 10),
+                                      Text(
+                                        'No products in cart',
+                                        style: TextStyle(
+                                          fontSize: ResponsiveHelper.getFontSize(
+                                            context,
+                                            mobile: 16,
+                                            tablet: 18,
+                                            desktop: 18,
+                                          ),
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      SizedBox(height: isTablet ? 8 : 6),
+                                      Text(
+                                        'Add products to your booking (optional)',
+                                        style: TextStyle(
+                                          fontSize: ResponsiveHelper.getFontSize(
+                                            context,
+                                            mobile: 14,
+                                            tablet: 15,
+                                            desktop: 15,
+                                          ),
+                                          color: AppColors.textSecondary,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: isTablet ? 16 : 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Get.to(() => const ProductScreen());
+                                    },
+                                    icon: const Icon(Icons.add_shopping_cart),
+                                    label: const Text('Browse Products'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      side: BorderSide(color: AppColors.primary),
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: isTablet ? 14 : 12,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ...cartController.cartItems.map((cartItem) => _buildCartItemPreview(
+                                  context,
+                                  cartItem: cartItem,
+                                  isTablet: isTablet,
+                                )),
+                                SizedBox(height: isTablet ? 12 : 10),
+                                Divider(color: AppColors.borderLight),
+                                SizedBox(height: isTablet ? 12 : 10),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Total Products',
+                                      style: TextStyle(
+                                        fontSize: ResponsiveHelper.getFontSize(
+                                          context,
+                                          mobile: 16,
+                                          tablet: 18,
+                                          desktop: 18,
+                                        ),
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '\$${cartController.totalPrice.toStringAsFixed(2)}',
+                                      style: TextStyle(
+                                        fontSize: ResponsiveHelper.getFontSize(
+                                          context,
+                                          mobile: 18,
+                                          tablet: 20,
+                                          desktop: 22,
+                                        ),
+                                        fontWeight: FontWeight.bold,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: isTablet ? 12 : 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: () {
+                                      Get.to(() => const ProductScreen());
+                                    },
+                                    icon: const Icon(Icons.edit_outlined, size: 18),
+                                    label: const Text('Edit Products'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      side: BorderSide(color: AppColors.primary),
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: isTablet ? 12 : 10,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    )),
+                    
+                    SizedBox(height: isTablet ? 24 : 20),
+                    
                     // Notes Card
                     _buildSectionCard(
                       context,
@@ -776,6 +937,141 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
+  Widget _buildCartItemPreview(
+    BuildContext context, {
+    required CartItem cartItem,
+    required bool isTablet,
+  }) {
+    return Container(
+      margin: EdgeInsets.only(bottom: isTablet ? 12 : 10),
+      padding: EdgeInsets.all(isTablet ? 16 : 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        children: [
+          // Product Image
+          Container(
+            width: isTablet ? 60 : 50,
+            height: isTablet ? 60 : 50,
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.borderLight),
+            ),
+            child: cartItem.product.imageUrl != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      cartItem.product.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Center(
+                          child: Icon(
+                            Icons.shopping_bag,
+                            size: isTablet ? 24 : 20,
+                            color: AppColors.textSecondary,
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : Center(
+                    child: Icon(
+                      Icons.shopping_bag,
+                      size: isTablet ? 24 : 20,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+          ),
+          SizedBox(width: isTablet ? 12 : 10),
+          // Product Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  cartItem.product.name,
+                  style: TextStyle(
+                    fontSize: ResponsiveHelper.getFontSize(
+                      context,
+                      mobile: 15,
+                      tablet: 16,
+                      desktop: 17,
+                    ),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: isTablet ? 6 : 4),
+                Row(
+                  children: [
+                    Text(
+                      'Qty: ${cartItem.quantity}',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getFontSize(
+                          context,
+                          mobile: 13,
+                          tablet: 14,
+                          desktop: 14,
+                        ),
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    SizedBox(width: isTablet ? 12 : 8),
+                    Text(
+                      '×',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getFontSize(
+                          context,
+                          mobile: 13,
+                          tablet: 14,
+                          desktop: 14,
+                        ),
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    SizedBox(width: isTablet ? 12 : 8),
+                    Text(
+                      '\$${cartItem.product.price.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getFontSize(
+                          context,
+                          mobile: 13,
+                          tablet: 14,
+                          desktop: 14,
+                        ),
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Total Price
+          Text(
+            '\$${cartItem.totalPrice.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: ResponsiveHelper.getFontSize(
+                context,
+                mobile: 16,
+                tablet: 18,
+                desktop: 18,
+              ),
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTextFieldWithIcon(
     BuildContext context, {
     required TextEditingController controller,
@@ -955,21 +1251,47 @@ class _BookingScreenState extends State<BookingScreen> {
 
     final bookingDatetime = _formatDateTime(selectedDateTime!);
     
+    // Prepare product information for booking
+    final List<Map<String, dynamic>> products = cartController.cartItems.map((item) {
+      return {
+        'product_id': item.product.id,
+        'quantity': item.quantity,
+      };
+    }).toList();
+    
     final success = await bookingController.createBooking(
       customerName: _customerNameController.text.trim(),
       customerPhone: _customerPhoneController.text.trim(),
       serviceId: selectedService!.id,
       bookingDatetime: bookingDatetime,
       notes: _notesController.text.trim(),
+      products: products.isNotEmpty ? products : null,
     );
 
     if (success) {
+      final phoneNumber = _customerPhoneController.text.trim();
+      final hadProducts = cartController.cartItems.isNotEmpty;
+      
+      // Clear cart after successful booking
+      cartController.clearCart();
+      
+      // Refresh products to update stock availability
+      if (hadProducts) {
+        try {
+          final productsCtrl = Get.find<ProductsController>();
+          productsCtrl.fetchProducts();
+        } catch (e) {
+          // Products controller doesn't exist, that's okay
+        }
+      }
+      
       Get.snackbar(
         'Success',
-        'Appointment booked successfully!',
+        'Appointment booked successfully!${hadProducts ? ' Products will be ready for pickup at the clinic.' : ''}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: AppColors.secondary,
+        duration: const Duration(seconds: 3),
       );
       
       // Reset form
@@ -979,6 +1301,11 @@ class _BookingScreenState extends State<BookingScreen> {
         _notesController.clear();
         selectedService = null;
         selectedDateTime = null;
+      });
+      
+      // Navigate to My Booking page with phone number
+      Future.delayed(const Duration(milliseconds: 500), () {
+        Get.off(() => MyBookingPage(phoneNumber: phoneNumber));
       });
     } else {
       Get.snackbar(

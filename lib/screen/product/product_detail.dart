@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../widget/color.dart';
 import '../../widget/responsive.dart';
 import '../../models/product.dart';
+import '../../controllers/cart_controller.dart';
 
-class ProductDetailScreen extends StatelessWidget {
+class ProductDetailScreen extends StatefulWidget {
   final Product product;
 
   const ProductDetailScreen({
@@ -12,8 +14,17 @@ class ProductDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  int _quantity = 1;
+
+  @override
   Widget build(BuildContext context) {
     final isTablet = ResponsiveHelper.isTablet(context);
+    final cartController = Get.put(CartController());
+    final product = widget.product;
 
     return Scaffold(
       body: CustomScrollView(
@@ -193,84 +204,137 @@ class ProductDetailScreen extends StatelessWidget {
                       ),
                     ),
                     SizedBox(height: isTablet ? 30 : 24),
+                    
+                    // Quantity Selector
+                    if (product.inStock)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Quantity',
+                            style: TextStyle(
+                              fontSize: ResponsiveHelper.getFontSize(
+                                context,
+                                mobile: 16,
+                                tablet: 18,
+                                desktop: 18,
+                              ),
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: isTablet ? 12 : 10),
+                          Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: AppColors.border),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      onPressed: _quantity > 1
+                                          ? () {
+                                              setState(() {
+                                                _quantity--;
+                                              });
+                                            }
+                                          : null,
+                                      icon: const Icon(Icons.remove, size: 20),
+                                      padding: EdgeInsets.all(isTablet ? 12 : 10),
+                                      constraints: const BoxConstraints(),
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: isTablet ? 24 : 20,
+                                      ),
+                                      child: Text(
+                                        '$_quantity',
+                                        style: TextStyle(
+                                          fontSize: ResponsiveHelper.getFontSize(
+                                            context,
+                                            mobile: 18,
+                                            tablet: 20,
+                                            desktop: 22,
+                                          ),
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      onPressed: _quantity < product.quantity
+                                          ? () {
+                                              setState(() {
+                                                _quantity++;
+                                              });
+                                            }
+                                          : null,
+                                      icon: const Icon(Icons.add, size: 20),
+                                      padding: EdgeInsets.all(isTablet ? 12 : 10),
+                                      constraints: const BoxConstraints(),
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                'Available: ${product.quantity}',
+                                style: TextStyle(
+                                  fontSize: ResponsiveHelper.getFontSize(
+                                    context,
+                                    mobile: 14,
+                                    tablet: 15,
+                                    desktop: 15,
+                                  ),
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: isTablet ? 24 : 20),
+                        ],
+                      ),
+                    
                     // Action Buttons
-                    Row(
-                      children: [
-                        // Add to Cart Button
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: product.inStock
-                                ? () {
-                                    _handleAddToCart(context);
-                                  }
-                                : null,
-                            icon: Icon(
-                              Icons.shopping_cart,
-                              size: ResponsiveHelper.getIconSize(context),
+                    SizedBox(
+                      width: double.infinity,
+                      height: isTablet ? 56 : 50,
+                      child: ElevatedButton.icon(
+                        onPressed: product.inStock
+                            ? () {
+                                _handleAddToCart(context, cartController);
+                              }
+                            : null,
+                        icon: Icon(
+                          Icons.shopping_cart,
+                          size: ResponsiveHelper.getIconSize(context),
+                        ),
+                        label: Text(
+                          'Add to Cart',
+                          style: TextStyle(
+                            fontSize: ResponsiveHelper.getFontSize(
+                              context,
+                              mobile: 16,
+                              tablet: 18,
+                              desktop: 18,
                             ),
-                            label: Text(
-                              'Add to Cart',
-                              style: TextStyle(
-                                fontSize: ResponsiveHelper.getFontSize(
-                                  context,
-                                  mobile: 16,
-                                  tablet: 18,
-                                  desktop: 18,
-                                ),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              side: BorderSide(color: AppColors.primary),
-                              padding: EdgeInsets.symmetric(
-                                vertical: isTablet ? 16 : 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(width: isTablet ? 16 : 12),
-                        // Order Now Button
-                        Expanded(
-                          flex: 2,
-                          child: ElevatedButton.icon(
-                            onPressed: product.inStock
-                                ? () {
-                                    _handleOrder(context);
-                                  }
-                                : null,
-                            icon: Icon(
-                              Icons.shopping_bag,
-                              size: ResponsiveHelper.getIconSize(context),
-                            ),
-                            label: Text(
-                              'Order Now',
-                              style: TextStyle(
-                                fontSize: ResponsiveHelper.getFontSize(
-                                  context,
-                                  mobile: 16,
-                                  tablet: 18,
-                                  desktop: 18,
-                                ),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: AppColors.secondary,
-                              padding: EdgeInsets.symmetric(
-                                vertical: isTablet ? 16 : 14,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.secondary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                      ],
+                      ),
                     ),
                     SizedBox(height: isTablet ? 30 : 24),
                   ],
@@ -335,7 +399,9 @@ class ProductDetailScreen extends StatelessWidget {
     );
   }
 
-  void _handleAddToCart(BuildContext context) {
+  void _handleAddToCart(BuildContext context, CartController cartController) {
+    cartController.addToCart(widget.product, quantity: _quantity);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -344,7 +410,7 @@ class ProductDetailScreen extends StatelessWidget {
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                '${product.name} added to cart',
+                '${_quantity}x ${widget.product.name} added to cart',
                 style: TextStyle(
                   fontSize: ResponsiveHelper.getFontSize(
                     context,
@@ -365,148 +431,11 @@ class ProductDetailScreen extends StatelessWidget {
         duration: const Duration(seconds: 2),
       ),
     );
-    // TODO: Implement actual add to cart functionality
-  }
-
-  void _handleOrder(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        final isTablet = ResponsiveHelper.isTablet(context);
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(
-            'Confirm Order',
-            style: TextStyle(
-              fontSize: ResponsiveHelper.getFontSize(
-                context,
-                mobile: 20,
-                tablet: 24,
-                desktop: 24,
-              ),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Product: ${product.name}',
-                style: TextStyle(
-                  fontSize: ResponsiveHelper.getFontSize(
-                    context,
-                    mobile: 16,
-                    tablet: 18,
-                    desktop: 18,
-                  ),
-                ),
-              ),
-              SizedBox(height: isTablet ? 12 : 8),
-              Text(
-                'Price: \$${product.price}',
-                style: TextStyle(
-                  fontSize: ResponsiveHelper.getFontSize(
-                    context,
-                    mobile: 16,
-                    tablet: 18,
-                    desktop: 18,
-                  ),
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                ),
-              ),
-              SizedBox(height: isTablet ? 12 : 8),
-              Text(
-                'Do you want to proceed with this order?',
-                style: TextStyle(
-                  fontSize: ResponsiveHelper.getFontSize(
-                    context,
-                    mobile: 14,
-                    tablet: 16,
-                    desktop: 16,
-                  ),
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: ResponsiveHelper.getFontSize(
-                    context,
-                    mobile: 16,
-                    tablet: 18,
-                    desktop: 18,
-                  ),
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        Icon(Icons.check_circle, color: AppColors.secondary),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Order placed successfully!',
-                            style: TextStyle(
-                              fontSize: ResponsiveHelper.getFontSize(
-                                context,
-                                mobile: 14,
-                                tablet: 16,
-                                desktop: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-                // TODO: Implement actual order functionality
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.secondary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: Text(
-                'Confirm',
-                style: TextStyle(
-                  fontSize: ResponsiveHelper.getFontSize(
-                    context,
-                    mobile: 16,
-                    tablet: 18,
-                    desktop: 18,
-                  ),
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    
+    // Reset quantity to 1 after adding to cart
+    setState(() {
+      _quantity = 1;
+    });
   }
 }
 

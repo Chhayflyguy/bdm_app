@@ -5,11 +5,14 @@ import 'package:omni_datetime_picker/omni_datetime_picker.dart';
 import '../../widget/color.dart';
 import '../../widget/responsive.dart';
 import '../../controllers/booking_controller.dart';
+import '../../controllers/products_controller.dart';
 import '../../models/booking.dart';
 import 'booking_screen.dart';
 
 class MyBookingPage extends StatefulWidget {
-  const MyBookingPage({super.key});
+  final String? phoneNumber;
+  
+  const MyBookingPage({super.key, this.phoneNumber});
 
   @override
   State<MyBookingPage> createState() => _MyBookingPageState();
@@ -22,17 +25,34 @@ class _MyBookingPageState extends State<MyBookingPage> {
   static const String _telegramUrl = 'https://t.me/meng_chhay564';
 
   @override
+  void initState() {
+    super.initState();
+    // If phone number is provided, set it and search automatically
+    if (widget.phoneNumber != null && widget.phoneNumber!.isNotEmpty) {
+      _phoneController.text = widget.phoneNumber!;
+      // Wait for the widget to be built before searching
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _searchBookings(skipValidation: true);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
   }
 
-  Future<void> _searchBookings() async {
-    if (!_formKey.currentState!.validate()) {
+  Future<void> _searchBookings({bool skipValidation = false}) async {
+    if (!skipValidation && !_formKey.currentState!.validate()) {
       return;
     }
 
     final phoneNumber = _phoneController.text.trim();
+    if (phoneNumber.isEmpty) {
+      return;
+    }
+
     final success = await bookingController.fetchBookingsByPhone(phoneNumber);
 
     if (!success && bookingController.errorMessage.value.isNotEmpty) {
@@ -88,6 +108,70 @@ class _MyBookingPageState extends State<MyBookingPage> {
         foregroundColor: AppColors.secondary,
         elevation: 0,
         actions: [
+          Obx(() => IconButton(
+            icon: bookingController.isLoadingBookings.value
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
+                    ),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: bookingController.isLoadingBookings.value
+                ? null
+                : () async {
+                    if (_phoneController.text.trim().isNotEmpty) {
+                      await bookingController.fetchBookingsByPhone(_phoneController.text.trim());
+                      if (bookingController.errorMessage.value.isNotEmpty) {
+                        Get.snackbar(
+                          'Error',
+                          bookingController.errorMessage.value,
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: AppColors.error,
+                          colorText: AppColors.secondary,
+                        );
+                      } else {
+                        Get.snackbar(
+                          'Refreshed',
+                          'Bookings updated successfully',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: AppColors.success,
+                          colorText: AppColors.secondary,
+                          duration: const Duration(seconds: 1),
+                        );
+                      }
+                    } else {
+                      Get.snackbar(
+                        'Info',
+                        'Please enter your phone number first',
+                        snackPosition: SnackPosition.BOTTOM,
+                        backgroundColor: AppColors.info,
+                        colorText: AppColors.secondary,
+                      );
+                    }
+                  },
+            tooltip: 'Refresh Bookings',
+          )),
+          Obx(() => IconButton(
+            icon: const Icon(Icons.clear_all),
+            onPressed: bookingController.bookings.isEmpty
+                ? null
+                : () {
+                    bookingController.bookings.clear();
+                    bookingController.errorMessage.value = '';
+                    Get.snackbar(
+                      'Cleared',
+                      'Bookings list cleared',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: AppColors.info,
+                      colorText: AppColors.secondary,
+                      duration: const Duration(seconds: 1),
+                    );
+                  },
+            tooltip: 'Clear Bookings',
+          )),
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
             onPressed: () {
@@ -361,49 +445,55 @@ class _MyBookingPageState extends State<MyBookingPage> {
 
                   if (bookingController.bookings.isEmpty) {
                     if (_phoneController.text.isNotEmpty) {
-                      return Container(
-                        padding: EdgeInsets.all(isTablet ? 32 : 24),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.borderLight),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.event_busy,
-                              size: isTablet ? 64 : 48,
-                              color: AppColors.textSecondary,
-                            ),
-                            SizedBox(height: isTablet ? 16 : 12),
-                            Text(
-                              'No Bookings Found',
-                              style: TextStyle(
-                                fontSize: ResponsiveHelper.getFontSize(
-                                  context,
-                                  mobile: 18,
-                                  tablet: 20,
-                                  desktop: 22,
-                                ),
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            SizedBox(height: isTablet ? 8 : 6),
-                            Text(
-                              'No bookings found for this phone number',
-                              style: TextStyle(
-                                fontSize: ResponsiveHelper.getFontSize(
-                                  context,
-                                  mobile: 14,
-                                  tablet: 16,
-                                  desktop: 16,
-                                ),
+                      return Center(
+                        child: Container(
+                          padding: EdgeInsets.all(isTablet ? 32 : 24),
+                          decoration: BoxDecoration(
+                            color: AppColors.cardBackground,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.borderLight),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.event_busy,
+                                size: isTablet ? 64 : 48,
                                 color: AppColors.textSecondary,
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                              SizedBox(height: isTablet ? 16 : 12),
+                              Text(
+                                'No Bookings Found',
+                                style: TextStyle(
+                                  fontSize: ResponsiveHelper.getFontSize(
+                                    context,
+                                    mobile: 18,
+                                    tablet: 20,
+                                    desktop: 22,
+                                  ),
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: isTablet ? 8 : 6),
+                              Text(
+                                'No bookings found for this phone number',
+                                style: TextStyle(
+                                  fontSize: ResponsiveHelper.getFontSize(
+                                    context,
+                                    mobile: 14,
+                                    tablet: 16,
+                                    desktop: 16,
+                                  ),
+                                  color: AppColors.textSecondary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }
@@ -451,6 +541,7 @@ class _MyBookingPageState extends State<MyBookingPage> {
     final bookingDate = booking.bookingDate;
     final statusColor = _getStatusColor(booking.status);
     final bool isConfirmed = (booking.status ?? '').toLowerCase() == 'confirmed';
+    final bool isCancelled = (booking.status ?? '').toLowerCase() == 'cancelled';
 
     return Container(
       margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
@@ -597,36 +688,37 @@ class _MyBookingPageState extends State<MyBookingPage> {
           SizedBox(height: isTablet ? 16 : 12),
           Divider(color: AppColors.borderLight),
           SizedBox(height: isTablet ? 12 : 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              TextButton.icon(
-                onPressed: isConfirmed ? null : () => _showEditDialog(context, booking, isTablet),
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Edit'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 16 : 12,
-                    vertical: isTablet ? 10 : 8,
+          if (!isCancelled)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton.icon(
+                  onPressed: isConfirmed ? null : () => _showEditDialog(context, booking, isTablet),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Edit'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 16 : 12,
+                      vertical: isTablet ? 10 : 8,
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(width: isTablet ? 12 : 8),
-              TextButton.icon(
-                onPressed: isConfirmed ? null : () => _showDeleteConfirmation(context, booking),
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: Text(isConfirmed ? 'Cancel' : 'Delete'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isTablet ? 16 : 12,
-                    vertical: isTablet ? 10 : 8,
+                SizedBox(width: isTablet ? 12 : 8),
+                TextButton.icon(
+                  onPressed: isConfirmed ? null : () => _showDeleteConfirmation(context, booking),
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: Text(isConfirmed ? 'Cancel' : 'Cancel Booking'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isTablet ? 16 : 12,
+                      vertical: isTablet ? 10 : 8,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           if (isConfirmed) ...[
             SizedBox(height: isTablet ? 12 : 10),
             Container(
@@ -647,6 +739,61 @@ class _MyBookingPageState extends State<MyBookingPage> {
                       Expanded(
                         child: Text(
                           'This booking is confirmed. Updates and cancellations are not allowed here.',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: ResponsiveHelper.getFontSize(
+                              context,
+                              mobile: 13,
+                              tablet: 14,
+                              desktop: 14,
+                            ),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: isTablet ? 46 : 42,
+                    child: OutlinedButton.icon(
+                      onPressed: _launchTelegram,
+                      icon: const Icon(Icons.telegram),
+                      label: const Text('Contact admin on Telegram'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primary),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (isCancelled) ...[
+            SizedBox(height: isTablet ? 12 : 10),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(isTablet ? 16 : 14),
+              decoration: BoxDecoration(
+                color: AppColors.error.withOpacity(0.08),
+                border: Border.all(color: AppColors.error.withOpacity(0.4)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: AppColors.error, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This booking has been cancelled. If you need to make changes, please contact the admin.',
                           style: TextStyle(
                             color: AppColors.textPrimary,
                             fontSize: ResponsiveHelper.getFontSize(
@@ -973,6 +1120,15 @@ class _MyBookingPageState extends State<MyBookingPage> {
 
                       if (success) {
                         Navigator.of(context).pop(true);
+                        
+                        // Refresh products to restore stock availability
+                        try {
+                          final productsCtrl = Get.find<ProductsController>();
+                          productsCtrl.fetchProducts();
+                        } catch (e) {
+                          // Products controller doesn't exist, that's okay
+                        }
+                        
                         Get.snackbar(
                           'Success',
                           'Booking deleted successfully!',
@@ -1010,7 +1166,7 @@ class _MyBookingPageState extends State<MyBookingPage> {
                         valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
                       ),
                     )
-                  : const Text('Delete'),
+                  : const Text('Yes'),
             )),
           ],
         );

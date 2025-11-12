@@ -3,8 +3,10 @@ import 'package:get/get.dart';
 import '../../widget/color.dart';
 import '../../widget/responsive.dart';
 import '../../controllers/products_controller.dart';
+import '../../controllers/cart_controller.dart';
 import '../../models/product.dart';
 import 'product_detail.dart';
+import 'cart_screen.dart';
 
 class ProductScreen extends StatelessWidget {
   const ProductScreen({super.key});
@@ -12,6 +14,7 @@ class ProductScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(ProductsController());
+    final cartController = Get.put(CartController());
     final isTablet = ResponsiveHelper.isTablet(context);
     
     return Scaffold(
@@ -20,6 +23,44 @@ class ProductScreen extends StatelessWidget {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.secondary,
         elevation: 0,
+        actions: [
+          Obx(() => Stack(
+            children: [
+              IconButton(
+                icon: Icon(Icons.shopping_cart, size: ResponsiveHelper.getIconSize(context),),
+                onPressed: () {
+                  Get.to(() => const CartScreen());
+                },
+                tooltip: 'My Cart',
+              ),
+              if (cartController.totalItems > 0)
+                Positioned(
+                  right: 2,
+                  top: 2,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: AppColors.error,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 18,
+                      minHeight: 18,
+                    ),
+                    child: Text(
+                      '${cartController.totalItems}',
+                      style: const TextStyle(
+                        color: AppColors.secondary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          )),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(

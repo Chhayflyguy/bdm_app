@@ -23,6 +23,7 @@ class BookingController extends GetxController {
     required int serviceId,
     required String bookingDatetime,
     String? notes,
+    List<Map<String, dynamic>>? products,
   }) async {
     isLoading.value = true;
     errorMessage.value = '';
@@ -30,13 +31,20 @@ class BookingController extends GetxController {
 
     try {
       final uri = Uri.parse('$baseUrl/api/bookings');
-      final requestBody = json.encode({
+      final requestBodyMap = {
         'customer_name': customerName,
         'customer_phone': customerPhone,
         'service_id': serviceId,
         'booking_datetime': bookingDatetime,
         'notes': notes ?? '',
-      });
+      };
+      
+      // Add products if provided
+      if (products != null && products.isNotEmpty) {
+        requestBodyMap['products'] = products;
+      }
+      
+      final requestBody = json.encode(requestBodyMap);
       
       final response = await http.post(
         uri,
