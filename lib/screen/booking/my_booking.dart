@@ -7,11 +7,12 @@ import '../../widget/responsive.dart';
 import '../../controllers/booking_controller.dart';
 import '../../controllers/products_controller.dart';
 import '../../models/booking.dart';
+import '../../models/employee.dart';
 import 'booking_screen.dart';
 
 class MyBookingPage extends StatefulWidget {
   final String? phoneNumber;
-  
+
   const MyBookingPage({super.key, this.phoneNumber});
 
   @override
@@ -35,6 +36,8 @@ class _MyBookingPageState extends State<MyBookingPage> {
         _searchBookings(skipValidation: true);
       });
     }
+    // Fetch employees for therapist selection
+    bookingController.fetchEmployees();
   }
 
   @override
@@ -68,15 +71,28 @@ class _MyBookingPageState extends State<MyBookingPage> {
 
   String _formatDisplayDate(DateTime dateTime) {
     final months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return '${weekdays[dateTime.weekday - 1]}, ${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year}';
   }
 
   String _formatDisplayTime(DateTime dateTime) {
-    final hour = dateTime.hour > 12 ? dateTime.hour - 12 : (dateTime.hour == 0 ? 12 : dateTime.hour);
+    final hour =
+        dateTime.hour > 12
+            ? dateTime.hour - 12
+            : (dateTime.hour == 0 ? 12 : dateTime.hour);
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final period = dateTime.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
@@ -108,70 +124,81 @@ class _MyBookingPageState extends State<MyBookingPage> {
         foregroundColor: AppColors.secondary,
         elevation: 0,
         actions: [
-          Obx(() => IconButton(
-            icon: bookingController.isLoadingBookings.value
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
-                    ),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: bookingController.isLoadingBookings.value
-                ? null
-                : () async {
-                    if (_phoneController.text.trim().isNotEmpty) {
-                      await bookingController.fetchBookingsByPhone(_phoneController.text.trim());
-                      if (bookingController.errorMessage.value.isNotEmpty) {
+          Obx(
+            () => IconButton(
+              icon:
+                  bookingController.isLoadingBookings.value
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppColors.secondary,
+                          ),
+                        ),
+                      )
+                      : const Icon(Icons.refresh),
+              onPressed:
+                  bookingController.isLoadingBookings.value
+                      ? null
+                      : () async {
+                        if (_phoneController.text.trim().isNotEmpty) {
+                          await bookingController.fetchBookingsByPhone(
+                            _phoneController.text.trim(),
+                          );
+                          if (bookingController.errorMessage.value.isNotEmpty) {
+                            Get.snackbar(
+                              'Error',
+                              bookingController.errorMessage.value,
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: AppColors.error,
+                              colorText: AppColors.secondary,
+                            );
+                          } else {
+                            Get.snackbar(
+                              'Refreshed',
+                              'Bookings updated successfully',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: AppColors.success,
+                              colorText: AppColors.secondary,
+                              duration: const Duration(seconds: 1),
+                            );
+                          }
+                        } else {
+                          Get.snackbar(
+                            'Info',
+                            'Please enter your phone number first',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: AppColors.info,
+                            colorText: AppColors.secondary,
+                          );
+                        }
+                      },
+              tooltip: 'Refresh Bookings',
+            ),
+          ),
+          Obx(
+            () => IconButton(
+              icon: const Icon(Icons.clear_all),
+              onPressed:
+                  bookingController.bookings.isEmpty
+                      ? null
+                      : () {
+                        bookingController.bookings.clear();
+                        bookingController.errorMessage.value = '';
                         Get.snackbar(
-                          'Error',
-                          bookingController.errorMessage.value,
+                          'Cleared',
+                          'Bookings list cleared',
                           snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.error,
-                          colorText: AppColors.secondary,
-                        );
-                      } else {
-                        Get.snackbar(
-                          'Refreshed',
-                          'Bookings updated successfully',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.success,
+                          backgroundColor: AppColors.info,
                           colorText: AppColors.secondary,
                           duration: const Duration(seconds: 1),
                         );
-                      }
-                    } else {
-                      Get.snackbar(
-                        'Info',
-                        'Please enter your phone number first',
-                        snackPosition: SnackPosition.BOTTOM,
-                        backgroundColor: AppColors.info,
-                        colorText: AppColors.secondary,
-                      );
-                    }
-                  },
-            tooltip: 'Refresh Bookings',
-          )),
-          Obx(() => IconButton(
-            icon: const Icon(Icons.clear_all),
-            onPressed: bookingController.bookings.isEmpty
-                ? null
-                : () {
-                    bookingController.bookings.clear();
-                    bookingController.errorMessage.value = '';
-                    Get.snackbar(
-                      'Cleared',
-                      'Bookings list cleared',
-                      snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: AppColors.info,
-                      colorText: AppColors.secondary,
-                      duration: const Duration(seconds: 1),
-                    );
-                  },
-            tooltip: 'Clear Bookings',
-          )),
+                      },
+              tooltip: 'Clear Bookings',
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
             onPressed: () {
@@ -186,10 +213,7 @@ class _MyBookingPageState extends State<MyBookingPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.primary.withOpacity(0.05),
-              AppColors.background,
-            ],
+            colors: [AppColors.primary.withOpacity(0.05), AppColors.background],
           ),
         ),
         child: SingleChildScrollView(
@@ -331,8 +355,13 @@ class _MyBookingPageState extends State<MyBookingPage> {
                           keyboardType: TextInputType.phone,
                           decoration: InputDecoration(
                             hintText: 'Enter your phone number',
-                            hintStyle: TextStyle(color: AppColors.textSecondary),
-                            prefixIcon: const Icon(Icons.phone, color: AppColors.primary),
+                            hintStyle: TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.phone,
+                              color: AppColors.primary,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide(color: AppColors.border),
@@ -343,7 +372,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: AppColors.primary, width: 2),
+                              borderSide: BorderSide(
+                                color: AppColors.primary,
+                                width: 2,
+                              ),
                             ),
                             filled: true,
                             fillColor: AppColors.surface,
@@ -366,71 +398,80 @@ class _MyBookingPageState extends State<MyBookingPage> {
                           },
                         ),
                         SizedBox(height: isTablet ? 20 : 16),
-                        Obx(() => SizedBox(
-                          width: double.infinity,
-                          height: isTablet ? 56 : 50,
-                          child: ElevatedButton(
-                            onPressed: bookingController.isLoadingBookings.value
-                                ? null
-                                : _searchBookings,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: AppColors.secondary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                        Obx(
+                          () => SizedBox(
+                            width: double.infinity,
+                            height: isTablet ? 56 : 50,
+                            child: ElevatedButton(
+                              onPressed:
+                                  bookingController.isLoadingBookings.value
+                                      ? null
+                                      : _searchBookings,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: AppColors.secondary,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
                               ),
-                              elevation: 0,
+                              child:
+                                  bookingController.isLoadingBookings.value
+                                      ? Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2.5,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    AppColors.secondary,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'Searching...',
+                                            style: TextStyle(
+                                              fontSize:
+                                                  ResponsiveHelper.getFontSize(
+                                                    context,
+                                                    mobile: 16,
+                                                    tablet: 18,
+                                                    desktop: 18,
+                                                  ),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                      : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.search, size: 22),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            'Search',
+                                            style: TextStyle(
+                                              fontSize:
+                                                  ResponsiveHelper.getFontSize(
+                                                    context,
+                                                    mobile: 16,
+                                                    tablet: 18,
+                                                    desktop: 18,
+                                                  ),
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                             ),
-                            child: bookingController.isLoadingBookings.value
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            AppColors.secondary,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        'Searching...',
-                                        style: TextStyle(
-                                          fontSize: ResponsiveHelper.getFontSize(
-                                            context,
-                                            mobile: 16,
-                                            tablet: 18,
-                                            desktop: 18,
-                                          ),
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.search, size: 22),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Search',
-                                        style: TextStyle(
-                                          fontSize: ResponsiveHelper.getFontSize(
-                                            context,
-                                            mobile: 16,
-                                            tablet: 18,
-                                            desktop: 18,
-                                          ),
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
                           ),
-                        )),
+                        ),
                       ],
                     ),
                   ),
@@ -517,11 +558,13 @@ class _MyBookingPageState extends State<MyBookingPage> {
                         ),
                       ),
                       SizedBox(height: isTablet ? 16 : 12),
-                      ...bookingController.bookings.map((booking) => _buildBookingCard(
-                        context,
-                        booking: booking,
-                        isTablet: isTablet,
-                      )),
+                      ...bookingController.bookings.map(
+                        (booking) => _buildBookingCard(
+                          context,
+                          booking: booking,
+                          isTablet: isTablet,
+                        ),
+                      ),
                     ],
                   );
                 }),
@@ -540,8 +583,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
   }) {
     final bookingDate = booking.bookingDate;
     final statusColor = _getStatusColor(booking.status);
-    final bool isConfirmed = (booking.status ?? '').toLowerCase() == 'confirmed';
-    final bool isCancelled = (booking.status ?? '').toLowerCase() == 'cancelled';
+    final bool isConfirmed =
+        (booking.status ?? '').toLowerCase() == 'confirmed';
+    final bool isCancelled =
+        (booking.status ?? '').toLowerCase() == 'cancelled';
 
     return Container(
       margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
@@ -611,7 +656,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
               ),
               if (booking.status != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -654,6 +702,226 @@ class _MyBookingPageState extends State<MyBookingPage> {
               ),
             ],
           ),
+          if (booking.employeeName != null &&
+              booking.employeeName!.isNotEmpty) ...[
+            SizedBox(height: isTablet ? 16 : 12),
+            Divider(color: AppColors.borderLight),
+            SizedBox(height: isTablet ? 16 : 12),
+            Builder(
+              builder: (context) {
+                // Try to get full employee details from the employees list
+                Employee? employee;
+                if (booking.employeeId != null) {
+                  try {
+                    employee = bookingController.employees.firstWhere(
+                      (e) => e.id == booking.employeeId,
+                    );
+                  } catch (_) {}
+                }
+
+                final displayName = employee?.name ?? booking.employeeName!;
+                final displayPhone = employee?.phone ?? booking.employeePhone;
+                final displayImage =
+                    employee?.profileImageUrl ??
+                    booking.employeeProfileImageUrl;
+
+                // Responsive sizing
+                final profileSize = ResponsiveHelper.getFontSize(
+                  context,
+                  mobile: 60.0,
+                  tablet: 70.0,
+                  desktop: 80.0,
+                );
+                final cardPadding = ResponsiveHelper.getFontSize(
+                  context,
+                  mobile: 12.0,
+                  tablet: 16.0,
+                  desktop: 20.0,
+                );
+                final spacing = ResponsiveHelper.getFontSize(
+                  context,
+                  mobile: 14.0,
+                  tablet: 16.0,
+                  desktop: 18.0,
+                );
+
+                return Container(
+                  padding: EdgeInsets.all(cardPadding),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primary.withOpacity(0.05),
+                        AppColors.primary.withOpacity(0.02),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(isTablet ? 16 : 12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.2),
+                      width: isTablet ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      // Profile Image
+                      Container(
+                        width: profileSize,
+                        height: profileSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient:
+                              displayImage == null || displayImage.isEmpty
+                                  ? LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppColors.primary.withOpacity(0.2),
+                                      AppColors.primary.withOpacity(0.1),
+                                    ],
+                                  )
+                                  : null,
+                          border: Border.all(
+                            color: AppColors.primary.withOpacity(0.3),
+                            width: isTablet ? 3 : 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.1),
+                              blurRadius: isTablet ? 12 : 8,
+                              offset: Offset(0, isTablet ? 3 : 2),
+                            ),
+                          ],
+                        ),
+                        child: ClipOval(
+                          child:
+                              displayImage != null && displayImage.isNotEmpty
+                                  ? Image.network(
+                                    displayImage,
+                                    width: profileSize,
+                                    height: profileSize,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: AppColors.primary.withOpacity(
+                                          0.1,
+                                        ),
+                                        child: Icon(
+                                          Icons.person,
+                                          size: profileSize * 0.5,
+                                          color: AppColors.primary,
+                                        ),
+                                      );
+                                    },
+                                  )
+                                  : Icon(
+                                    Icons.person,
+                                    size: profileSize * 0.5,
+                                    color: AppColors.primary,
+                                  ),
+                        ),
+                      ),
+                      SizedBox(width: spacing),
+                      // Info Section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.medical_services_rounded,
+                                  size: ResponsiveHelper.getFontSize(
+                                    context,
+                                    mobile: 14,
+                                    tablet: 16,
+                                    desktop: 18,
+                                  ),
+                                  color: AppColors.primary,
+                                ),
+                                SizedBox(width: isTablet ? 6 : 4),
+                                Text(
+                                  'Your Therapist',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveHelper.getFontSize(
+                                      context,
+                                      mobile: 11,
+                                      tablet: 13,
+                                      desktop: 14,
+                                    ),
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: isTablet ? 6 : 4),
+                            Text(
+                              displayName,
+                              style: TextStyle(
+                                fontSize: ResponsiveHelper.getFontSize(
+                                  context,
+                                  mobile: 16,
+                                  tablet: 19,
+                                  desktop: 22,
+                                ),
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            if (displayPhone != null &&
+                                displayPhone.isNotEmpty) ...[
+                              SizedBox(height: isTablet ? 8 : 6),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(isTablet ? 5 : 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(
+                                        isTablet ? 6 : 4,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.phone,
+                                      size: ResponsiveHelper.getFontSize(
+                                        context,
+                                        mobile: 12,
+                                        tablet: 14,
+                                        desktop: 16,
+                                      ),
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  SizedBox(width: isTablet ? 8 : 6),
+                                  Expanded(
+                                    child: Text(
+                                      displayPhone,
+                                      style: TextStyle(
+                                        fontSize: ResponsiveHelper.getFontSize(
+                                          context,
+                                          mobile: 13,
+                                          tablet: 15,
+                                          desktop: 17,
+                                        ),
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
           if (booking.notes != null && booking.notes!.isNotEmpty) ...[
             SizedBox(height: isTablet ? 16 : 12),
             Divider(color: AppColors.borderLight),
@@ -693,7 +961,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton.icon(
-                  onPressed: isConfirmed ? null : () => _showEditDialog(context, booking, isTablet),
+                  onPressed:
+                      isConfirmed
+                          ? null
+                          : () => _showEditDialog(context, booking, isTablet),
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   label: const Text('Edit'),
                   style: TextButton.styleFrom(
@@ -706,7 +977,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
                 ),
                 SizedBox(width: isTablet ? 12 : 8),
                 TextButton.icon(
-                  onPressed: isConfirmed ? null : () => _showDeleteConfirmation(context, booking),
+                  onPressed:
+                      isConfirmed
+                          ? null
+                          : () => _showDeleteConfirmation(context, booking),
                   icon: const Icon(Icons.delete_outline, size: 18),
                   label: Text(isConfirmed ? 'Cancel' : 'Cancel Booking'),
                   style: TextButton.styleFrom(
@@ -734,7 +1008,11 @@ class _MyBookingPageState extends State<MyBookingPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info_outline, color: AppColors.warning, size: 20),
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.warning,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -789,7 +1067,11 @@ class _MyBookingPageState extends State<MyBookingPage> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info_outline, color: AppColors.error, size: 20),
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.error,
+                        size: 20,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -834,9 +1116,22 @@ class _MyBookingPageState extends State<MyBookingPage> {
     );
   }
 
-  Future<void> _showEditDialog(BuildContext context, Booking booking, bool isTablet) async {
+  Future<void> _showEditDialog(
+    BuildContext context,
+    Booking booking,
+    bool isTablet,
+  ) async {
     final notesController = TextEditingController(text: booking.notes ?? '');
     DateTime? selectedDateTime = booking.bookingDate;
+    Employee? selectedEmployee;
+
+    if (booking.employeeId != null) {
+      try {
+        selectedEmployee = bookingController.employees.firstWhere(
+          (e) => e.id == booking.employeeId,
+        );
+      } catch (_) {}
+    }
 
     await showDialog(
       context: context,
@@ -881,14 +1176,20 @@ class _MyBookingPageState extends State<MyBookingPage> {
                           DateTime? dateTime = await showOmniDateTimePicker(
                             context: context,
                             initialDate: selectedDateTime ?? DateTime.now(),
-                            firstDate: DateTime(1600).subtract(const Duration(days: 3652)),
-                            lastDate: DateTime.now().add(const Duration(days: 3652)),
+                            firstDate: DateTime(
+                              1600,
+                            ).subtract(const Duration(days: 3652)),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 3652),
+                            ),
                             is24HourMode: false,
                             isShowSeconds: false,
                             minutesInterval: 1,
                             secondsInterval: 1,
                             isForce2Digits: false,
-                            borderRadius: const BorderRadius.all(Radius.circular(16)),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(16),
+                            ),
                             constraints: const BoxConstraints(
                               maxWidth: 350,
                               maxHeight: 650,
@@ -896,7 +1197,7 @@ class _MyBookingPageState extends State<MyBookingPage> {
                             type: OmniDateTimePickerType.dateAndTime,
                             title: const Text('Select Date & Time'),
                           );
-                          
+
                           if (dateTime != null) {
                             setState(() {
                               selectedDateTime = dateTime;
@@ -910,15 +1211,20 @@ class _MyBookingPageState extends State<MyBookingPage> {
                             color: AppColors.surface,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: selectedDateTime != null 
-                                  ? AppColors.primary 
-                                  : AppColors.border,
+                              color:
+                                  selectedDateTime != null
+                                      ? AppColors.primary
+                                      : AppColors.border,
                               width: selectedDateTime != null ? 2 : 1,
                             ),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.calendar_today, color: AppColors.primary, size: 20),
+                              Icon(
+                                Icons.calendar_today,
+                                color: AppColors.primary,
+                                size: 20,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
@@ -926,7 +1232,9 @@ class _MyBookingPageState extends State<MyBookingPage> {
                                   children: [
                                     Text(
                                       selectedDateTime != null
-                                          ? _formatDisplayDate(selectedDateTime!)
+                                          ? _formatDisplayDate(
+                                            selectedDateTime!,
+                                          )
                                           : 'Choose date & time',
                                       style: TextStyle(
                                         fontSize: ResponsiveHelper.getFontSize(
@@ -936,9 +1244,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
                                           desktop: 16,
                                         ),
                                         fontWeight: FontWeight.w600,
-                                        color: selectedDateTime != null
-                                            ? AppColors.textPrimary
-                                            : AppColors.textSecondary,
+                                        color:
+                                            selectedDateTime != null
+                                                ? AppColors.textPrimary
+                                                : AppColors.textSecondary,
                                       ),
                                     ),
                                     if (selectedDateTime != null) ...[
@@ -955,11 +1264,291 @@ class _MyBookingPageState extends State<MyBookingPage> {
                                   ],
                                 ),
                               ),
-                              Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.textSecondary),
+                              Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: AppColors.textSecondary,
+                              ),
                             ],
                           ),
                         ),
                       ),
+                      const SizedBox(height: 20),
+                      // Therapist Selection
+                      Text(
+                        'Therapist (Optional)',
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper.getFontSize(
+                            context,
+                            mobile: 14,
+                            tablet: 16,
+                            desktop: 16,
+                          ),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Obx(() {
+                        if (bookingController.isLoadingEmployees.value) {
+                          return Container(
+                            height: 100,
+                            alignment: Alignment.center,
+                            child: const CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (bookingController.employees.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: AppColors.textSecondary,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'No therapists available',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    TextButton(
+                                      onPressed: () {
+                                        bookingController.refreshEmployees();
+                                      },
+                                      style: TextButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: Text(
+                                        'Retry',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (bookingController
+                                    .errorMessage
+                                    .value
+                                    .isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8),
+                                    child: Text(
+                                      bookingController.errorMessage.value,
+                                      style: TextStyle(
+                                        color: AppColors.error,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              height: 120,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: bookingController.employees.length,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                ),
+                                itemBuilder: (context, index) {
+                                  final employee =
+                                      bookingController.employees[index];
+                                  final isSelected =
+                                      selectedEmployee?.id == employee.id;
+                                  final isLast =
+                                      index ==
+                                      bookingController.employees.length - 1;
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedEmployee =
+                                            isSelected ? null : employee;
+                                      });
+                                    },
+                                    child: Container(
+                                      width: 100,
+                                      margin: EdgeInsets.only(
+                                        right: isLast ? 0 : 8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.surface,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color:
+                                              isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.border,
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Container(
+                                            width: 50,
+                                            height: 50,
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  isSelected
+                                                      ? AppColors.primary
+                                                          .withOpacity(0.2)
+                                                      : AppColors.borderLight,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color:
+                                                    isSelected
+                                                        ? AppColors.primary
+                                                        : AppColors.border,
+                                                width: isSelected ? 1.5 : 1,
+                                              ),
+                                            ),
+                                            child: ClipOval(
+                                              child:
+                                                  employee.profileImageUrl !=
+                                                              null &&
+                                                          employee
+                                                              .profileImageUrl!
+                                                              .isNotEmpty
+                                                      ? Image.network(
+                                                        employee
+                                                            .profileImageUrl!,
+                                                        width: 50,
+                                                        height: 50,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder: (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Icon(
+                                                            Icons.person,
+                                                            size: 24,
+                                                            color:
+                                                                isSelected
+                                                                    ? AppColors
+                                                                        .primary
+                                                                    : AppColors
+                                                                        .textSecondary,
+                                                          );
+                                                        },
+                                                      )
+                                                      : Icon(
+                                                        Icons.person,
+                                                        size: 24,
+                                                        color:
+                                                            isSelected
+                                                                ? AppColors
+                                                                    .primary
+                                                                : AppColors
+                                                                    .textSecondary,
+                                                      ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 4,
+                                            ),
+                                            child: Text(
+                                              employee.name,
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color:
+                                                    isSelected
+                                                        ? AppColors.primary
+                                                        : AppColors.textPrimary,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            if (selectedEmployee != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: AppColors.primary,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        '${selectedEmployee!.name} selected',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          selectedEmployee = null;
+                                        });
+                                      },
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: Text(
+                                        'Clear',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.error,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                          ],
+                        );
+                      }),
                       const SizedBox(height: 20),
                       // Notes Field
                       Text(
@@ -991,7 +1580,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: AppColors.primary, width: 2),
+                            borderSide: BorderSide(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
                           ),
                           filled: true,
                           fillColor: AppColors.surface,
@@ -1020,61 +1612,83 @@ class _MyBookingPageState extends State<MyBookingPage> {
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
-                Obx(() => ElevatedButton(
-                  onPressed: bookingController.isLoading.value || selectedDateTime == null
-                      ? null
-                      : () async {
-                          final bookingDatetime = _formatDateTime(selectedDateTime!);
-                          final success = await bookingController.updateBooking(
-                            bookingId: booking.id,
-                            phoneNumber: _phoneController.text.trim(),
-                            bookingDatetime: bookingDatetime,
-                            notes: notesController.text.trim().isEmpty 
-                                ? null 
-                                : notesController.text.trim(),
-                          );
+                Obx(
+                  () => ElevatedButton(
+                    onPressed:
+                        bookingController.isLoading.value ||
+                                selectedDateTime == null
+                            ? null
+                            : () async {
+                              final bookingDatetime = _formatDateTime(
+                                selectedDateTime!,
+                              );
+                              final success = await bookingController
+                                  .updateBooking(
+                                    bookingId: booking.id,
+                                    phoneNumber: _phoneController.text.trim(),
+                                    bookingDatetime: bookingDatetime,
+                                    notes:
+                                        notesController.text.trim().isEmpty
+                                            ? null
+                                            : notesController.text.trim(),
+                                    employeeId: selectedEmployee?.id,
+                                    employeeName: selectedEmployee?.name,
+                                    employeePhone: selectedEmployee?.phone,
+                                    employeeProfileImageUrl:
+                                        selectedEmployee?.profileImageUrl,
+                                    updateEmployee: true,
+                                  );
 
-                          if (success) {
-                            Navigator.of(context).pop();
-                            Get.snackbar(
-                              'Success',
-                              'Booking updated successfully!',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: AppColors.success,
-                              colorText: AppColors.secondary,
-                            );
-                            // Refresh the bookings list
-                            await bookingController.fetchBookingsByPhone(_phoneController.text.trim());
-                          } else {
-                            Get.snackbar(
-                              'Error',
-                              bookingController.errorMessage.value.isNotEmpty
-                                  ? bookingController.errorMessage.value
-                                  : 'Failed to update booking',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: AppColors.error,
-                              colorText: AppColors.secondary,
-                            );
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.secondary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                              if (success) {
+                                Navigator.of(context).pop();
+                                Get.snackbar(
+                                  'Success',
+                                  'Booking updated successfully!',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColors.success,
+                                  colorText: AppColors.secondary,
+                                );
+                                // Refresh the bookings list
+                                await bookingController.fetchBookingsByPhone(
+                                  _phoneController.text.trim(),
+                                );
+                              } else {
+                                Get.snackbar(
+                                  'Error',
+                                  bookingController
+                                          .errorMessage
+                                          .value
+                                          .isNotEmpty
+                                      ? bookingController.errorMessage.value
+                                      : 'Failed to update booking',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColors.error,
+                                  colorText: AppColors.secondary,
+                                );
+                              }
+                            },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.secondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    child:
+                        bookingController.isLoading.value
+                            ? SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.secondary,
+                                ),
+                              ),
+                            )
+                            : const Text('Save'),
                   ),
-                  child: bookingController.isLoading.value
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
-                          ),
-                        )
-                      : const Text('Save'),
-                )),
+                ),
               ],
             );
           },
@@ -1083,7 +1697,10 @@ class _MyBookingPageState extends State<MyBookingPage> {
     );
   }
 
-  Future<void> _showDeleteConfirmation(BuildContext context, Booking booking) async {
+  Future<void> _showDeleteConfirmation(
+    BuildContext context,
+    Booking booking,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -1109,65 +1726,74 @@ class _MyBookingPageState extends State<MyBookingPage> {
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ),
-            Obx(() => ElevatedButton(
-              onPressed: bookingController.isLoading.value
-                  ? null
-                  : () async {
-                      final success = await bookingController.deleteBooking(
-                        bookingId: booking.id,
-                        phoneNumber: _phoneController.text.trim(),
-                      );
+            Obx(
+              () => ElevatedButton(
+                onPressed:
+                    bookingController.isLoading.value
+                        ? null
+                        : () async {
+                          final success = await bookingController.deleteBooking(
+                            bookingId: booking.id,
+                            phoneNumber: _phoneController.text.trim(),
+                          );
 
-                      if (success) {
-                        Navigator.of(context).pop(true);
-                        
-                        // Refresh products to restore stock availability
-                        try {
-                          final productsCtrl = Get.find<ProductsController>();
-                          productsCtrl.fetchProducts();
-                        } catch (e) {
-                          // Products controller doesn't exist, that's okay
-                        }
-                        
-                        Get.snackbar(
-                          'Success',
-                          'Booking deleted successfully!',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.success,
-                          colorText: AppColors.secondary,
-                        );
-                        // Refresh the bookings list
-                        await bookingController.fetchBookingsByPhone(_phoneController.text.trim());
-                      } else {
-                        Get.snackbar(
-                          'Error',
-                          bookingController.errorMessage.value.isNotEmpty
-                              ? bookingController.errorMessage.value
-                              : 'Failed to delete booking',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: AppColors.error,
-                          colorText: AppColors.secondary,
-                        );
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.error,
-                foregroundColor: AppColors.secondary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                          if (success) {
+                            Navigator.of(context).pop(true);
+
+                            // Refresh products to restore stock availability
+                            try {
+                              final productsCtrl =
+                                  Get.find<ProductsController>();
+                              productsCtrl.fetchProducts();
+                            } catch (e) {
+                              // Products controller doesn't exist, that's okay
+                            }
+
+                            Get.snackbar(
+                              'Success',
+                              'Booking deleted successfully!',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: AppColors.success,
+                              colorText: AppColors.secondary,
+                            );
+                            // Refresh the bookings list
+                            await bookingController.fetchBookingsByPhone(
+                              _phoneController.text.trim(),
+                            );
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              bookingController.errorMessage.value.isNotEmpty
+                                  ? bookingController.errorMessage.value
+                                  : 'Failed to delete booking',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: AppColors.error,
+                              colorText: AppColors.secondary,
+                            );
+                          }
+                        },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: AppColors.secondary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
+                child:
+                    bookingController.isLoading.value
+                        ? SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.secondary,
+                            ),
+                          ),
+                        )
+                        : const Text('Yes'),
               ),
-              child: bookingController.isLoading.value
-                  ? SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.secondary),
-                      ),
-                    )
-                  : const Text('Yes'),
-            )),
+            ),
           ],
         );
       },
@@ -1245,4 +1871,3 @@ class _MyBookingPageState extends State<MyBookingPage> {
     );
   }
 }
-

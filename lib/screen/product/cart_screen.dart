@@ -157,8 +157,15 @@ class CartScreen extends StatelessWidget {
                             ),
                             if (cartController.cartItems.isNotEmpty)
                               TextButton.icon(
-                                onPressed: () => _showClearCartDialog(context, cartController),
-                                icon: const Icon(Icons.delete_outline, size: 18),
+                                onPressed:
+                                    () => _showClearCartDialog(
+                                      context,
+                                      cartController,
+                                    ),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                ),
                                 label: const Text('Clear'),
                                 style: TextButton.styleFrom(
                                   foregroundColor: AppColors.error,
@@ -168,12 +175,14 @@ class CartScreen extends StatelessWidget {
                         ),
                         SizedBox(height: isTablet ? 24 : 20),
                         // Cart Items
-                        ...cartController.cartItems.map((cartItem) => _buildCartItem(
-                          context,
-                          cartItem: cartItem,
-                          cartController: cartController,
-                          isTablet: isTablet,
-                        )),
+                        ...cartController.cartItems.map(
+                          (cartItem) => _buildCartItem(
+                            context,
+                            cartItem: cartItem,
+                            cartController: cartController,
+                            isTablet: isTablet,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -287,7 +296,7 @@ class CartScreen extends StatelessWidget {
   }) {
     return Container(
       margin: EdgeInsets.only(bottom: isTablet ? 16 : 12),
-      padding: EdgeInsets.all(isTablet ? 20 : 16),
+      padding: EdgeInsets.all(isTablet ? 20 : 12),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
@@ -300,183 +309,197 @@ class CartScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          // Product Image
-          Container(
-            width: isTablet ? 100 : 80,
-            height: isTablet ? 100 : 80,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderLight),
-            ),
-            child: cartItem.product.imageUrl != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      cartItem.product.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Center(
+          // Top Row: Image + Details + Delete
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Product Image
+              Container(
+                width: isTablet ? 90 : 70,
+                height: isTablet ? 90 : 70,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child:
+                    cartItem.product.imageUrl != null
+                        ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            cartItem.product.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Icon(
+                                  Icons.shopping_bag,
+                                  size: isTablet ? 36 : 28,
+                                  color: AppColors.textSecondary,
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                        : Center(
                           child: Icon(
                             Icons.shopping_bag,
-                            size: isTablet ? 40 : 32,
+                            size: isTablet ? 36 : 28,
                             color: AppColors.textSecondary,
                           ),
-                        );
-                      },
-                    ),
-                  )
-                : Center(
-                    child: Icon(
-                      Icons.shopping_bag,
-                      size: isTablet ? 40 : 32,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-          ),
-          SizedBox(width: isTablet ? 16 : 12),
-          // Product Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  cartItem.product.name,
-                  style: TextStyle(
-                    fontSize: ResponsiveHelper.getFontSize(
-                      context,
-                      mobile: 16,
-                      tablet: 18,
-                      desktop: 20,
-                    ),
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: isTablet ? 8 : 6),
-                Text(
-                  '\$${cartItem.product.price.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: ResponsiveHelper.getFontSize(
-                      context,
-                      mobile: 18,
-                      tablet: 20,
-                      desktop: 22,
-                    ),
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                SizedBox(height: isTablet ? 12 : 10),
-                // Quantity Controls
-                Row(
+                        ),
+              ),
+              SizedBox(width: isTablet ? 16 : 10),
+              // Product Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed: cartItem.quantity > 1
-                                ? () {
-                                    cartController.updateQuantity(
-                                      cartItem.product.id,
-                                      cartItem.quantity - 1,
-                                    );
-                                  }
-                                : null,
-                            icon: const Icon(Icons.remove, size: 18),
-                            padding: EdgeInsets.all(isTablet ? 8 : 6),
-                            constraints: const BoxConstraints(),
-                            color: AppColors.textPrimary,
-                          ),
-                          Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isTablet ? 16 : 12,
-                            ),
-                            child: Text(
-                              '${cartItem.quantity}',
-                              style: TextStyle(
-                                fontSize: ResponsiveHelper.getFontSize(
-                                  context,
-                                  mobile: 16,
-                                  tablet: 18,
-                                  desktop: 18,
-                                ),
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: cartItem.quantity < cartItem.product.quantity
-                                ? () {
-                                    cartController.updateQuantity(
-                                      cartItem.product.id,
-                                      cartItem.quantity + 1,
-                                    );
-                                  }
-                                : null,
-                            icon: const Icon(Icons.add, size: 18),
-                            padding: EdgeInsets.all(isTablet ? 8 : 6),
-                            constraints: const BoxConstraints(),
-                            color: AppColors.textPrimary,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Spacer(),
                     Text(
-                      '\$${cartItem.totalPrice.toStringAsFixed(2)}',
+                      cartItem.product.name,
                       style: TextStyle(
                         fontSize: ResponsiveHelper.getFontSize(
                           context,
-                          mobile: 18,
-                          tablet: 20,
-                          desktop: 22,
+                          mobile: 15,
+                          tablet: 18,
+                          desktop: 20,
                         ),
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: isTablet ? 6 : 4),
+                    Text(
+                      '\$${cartItem.product.price.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: ResponsiveHelper.getFontSize(
+                          context,
+                          mobile: 16,
+                          tablet: 18,
+                          desktop: 20,
+                        ),
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              // Remove Button
+              IconButton(
+                onPressed: () {
+                  cartController.removeFromCart(cartItem.product.id);
+                  Get.snackbar(
+                    'Removed',
+                    '${cartItem.product.name} removed from cart',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: AppColors.success,
+                    colorText: AppColors.secondary,
+                    duration: const Duration(seconds: 1),
+                  );
+                },
+                icon: const Icon(Icons.delete_outline, size: 20),
+                color: AppColors.error,
+                padding: EdgeInsets.all(isTablet ? 8 : 4),
+                constraints: const BoxConstraints(),
+                tooltip: 'Remove',
+              ),
+            ],
           ),
-          SizedBox(width: isTablet ? 12 : 8),
-          // Remove Button
-          IconButton(
-            onPressed: () {
-              cartController.removeFromCart(cartItem.product.id);
-              Get.snackbar(
-                'Removed',
-                '${cartItem.product.name} removed from cart',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: AppColors.success,
-                colorText: AppColors.secondary,
-                duration: const Duration(seconds: 1),
-              );
-            },
-            icon: const Icon(Icons.delete_outline),
-            color: AppColors.error,
-            tooltip: 'Remove',
+          SizedBox(height: isTablet ? 12 : 10),
+          // Bottom Row: Quantity Controls + Total
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Quantity Controls
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed:
+                          cartItem.quantity > 1
+                              ? () {
+                                cartController.updateQuantity(
+                                  cartItem.product.id,
+                                  cartItem.quantity - 1,
+                                );
+                              }
+                              : null,
+                      icon: const Icon(Icons.remove, size: 16),
+                      padding: EdgeInsets.all(isTablet ? 8 : 6),
+                      constraints: const BoxConstraints(),
+                      color: AppColors.textPrimary,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isTablet ? 12 : 8,
+                      ),
+                      child: Text(
+                        '${cartItem.quantity}',
+                        style: TextStyle(
+                          fontSize: ResponsiveHelper.getFontSize(
+                            context,
+                            mobile: 15,
+                            tablet: 17,
+                            desktop: 18,
+                          ),
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed:
+                          cartItem.quantity < cartItem.product.quantity
+                              ? () {
+                                cartController.updateQuantity(
+                                  cartItem.product.id,
+                                  cartItem.quantity + 1,
+                                );
+                              }
+                              : null,
+                      icon: const Icon(Icons.add, size: 16),
+                      padding: EdgeInsets.all(isTablet ? 8 : 6),
+                      constraints: const BoxConstraints(),
+                      color: AppColors.textPrimary,
+                    ),
+                  ],
+                ),
+              ),
+              // Total Price
+              Text(
+                '\$${cartItem.totalPrice.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: ResponsiveHelper.getFontSize(
+                    context,
+                    mobile: 17,
+                    tablet: 20,
+                    desktop: 22,
+                  ),
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  void _showClearCartDialog(BuildContext context, CartController cartController) {
+  void _showClearCartDialog(
+    BuildContext context,
+    CartController cartController,
+  ) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -529,4 +552,3 @@ class CartScreen extends StatelessWidget {
     );
   }
 }
-
